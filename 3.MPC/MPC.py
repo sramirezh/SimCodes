@@ -15,11 +15,34 @@ def FreeStream(Vel,Pos,Npart):
     return Pos
 
 def StochasticRotation(Vel,Pos):
+    
+    #Grid Displacement
     Disp=RandDisplacement()
     for i in xrange(3):
         Pos[:,i]=GridShift(Pos[:,i],Disp[:,i],L)
+        
+    #Cell Division
+    Head,List=CellDivision(Pos,Npart,L)
     
-    
+    I=np.identity(3)
+    #Stochastic Rotation Method
+    for i in xrange(L):
+        for j in xrange(L):
+            for k in xrange(L):
+
+                #Parameters and creation of the rotation matrix
+                phi,tetha=Random()
+                R=RotationMatrix(phi,tetha,alpha)
+                
+                particles=CellParticles(i,j,k,Head,List) #Particles in the cell
+                Velcm=Vcm(Vel[particles]) #Cm Velocity
+                
+                Vel[particles]=Vel[particles]+(R-I)*(Vel[particles]-Velcm)
+                
+                
+    #Grid Displacement back        
+    for i in xrange(3):
+        Pos[:,i]=GridShift(Pos[:,i],-Disp[:,i],L)
     
     return Vel
 
@@ -82,7 +105,7 @@ def GridShift(X,xshift,Lx):
     
     return X    
     
-def CellParticles(Pos,Npart,L):
+def CellDivision(Pos,Npart,L):
     """
     Performs Linked lists
     Output 
@@ -99,24 +122,64 @@ def CellParticles(Pos,Npart,L):
         Head[Cell[i,0],Cell[i,1],Cell[i,2]]=i+1
     return Head, List
     
-
+def CellParticles(Indx,Indy,Indz,Head,List):
+    """rho=Npart/L**3.0
+    returns the particles index for the cell described by the Input indexes
+    Cell[Indx,Indy,Indz]
+    """
+    Indexes=[]
+    part=Head[Indx,Indy,Indz]
+    while part!=0:
+        Indexes.append(part-1)
+        part=List[part-1]
+    Indexes=np.array(Indexes)
+    
+    return Indexes
 
 alpha=90
 deltat=0.5
-Npart=80
+Npart=10
 rho=np.float(10)
 L=int(np.ceil((Npart/rho)**(1./3.)))
 Nx=L #Number of partitions in x,y,z direction.
 a=L/Nx #Cell Size
 
-Nrun=100
+Nrun=1
 
+#Initialization of the system
 Pos,Vel=Initialise(Npart)
-rho=Npart/L**3.0
-
-Head,List=CellParticles(Pos,Npart,L)
-phi,tetha=Random()
-D=RotationMatrix(phi,tetha, alpha)
 
 
-#For testing Purposes
+#==============================================================================
+# Starting the MPC algorithm
+#==============================================================================
+
+for t in xrange(Nrun):
+    NewPos=FreeStream(Vel,Pos,Npart)
+    NewVel=StochasticRotation(Vel,Pos)
+
+
+
+
+#==============================================================================
+# For testing Purposes
+#==============================================================================
+
+#To see if the Cell process is correct
+
+part=Head[0,0,0]
+lista=[]
+while part!=0:
+    lista.append(part)
+    part=List[part-1]
+    
+lista=np.array(lista)-1
+import matplotlib.pyplot as plt
+plt.close("all")
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(Pos[:,0],Pos[:,1],Pos[:,2])
+ax.scatter(Pos[lista,0],Pos[lista,1],Pos[lista,2],c='r', marker='o',s=40)
+    
+    
+    
