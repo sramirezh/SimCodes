@@ -1,12 +1,16 @@
 #Make as c++
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def Initialise (Npart):
     print("\nCreating a new configuration!\n")
     Pos=np.random.rand(Npart,3)*L
-    Vel=np.random.uniform(low=0, high=1.0, size=(Npart,3))
+    Vel=np.random.uniform(low=-1.0, high=1.0, size=(Npart,3))
+    for i in xrange(Npart):
+        Vel[i,:]=Vel[i,:]/(np.linalg.norm(Vel[i,:]))
+        
     return Pos,Vel
 
 def FreeStream(Vel,Pos,Deltat):
@@ -144,17 +148,17 @@ def CellParticles(Indx,Indy,Indz,Head,List):
 
 alpha=90
 Deltat=0.5
-Npart=10000
+Npart=100000
 rho=np.float(10) 
 L=int(np.floor((Npart/rho)**(1./3.))) #Be careful to check what is the average density.
 Nx=L #Number of partitions in x,y,z direction.
 a=L/Nx #Cell Size
 print "The Average density of the system is: %f" %(Npart/L**3.0)
-Nrun=1000
+Nrun=10
 
 #Initialization of the system
 Pos,Vel=Initialise(Npart)
-VelInitial=Vel
+VelInitial=np.copy(Vel)
 
 #==============================================================================
 # Starting the MPC algorithm
@@ -164,6 +168,8 @@ for t in xrange(Nrun):
     print t
     Pos=FreeStream(Vel,Pos,Deltat)
     Vel=StochasticRotation(Vel,Pos)
+
+
 
 
 plt.close('all')
