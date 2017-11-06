@@ -40,7 +40,7 @@ def StochasticRotation(Vel,Pos):
                 #Parameters and creation of the rotation matrix
                 phi,tetha=Random()
                 R=RotationMatrix(phi,tetha,alpha)
-                Vel[particles]=Vel[particles]+np.transpose((R-I)*np.transpose(Velcm))
+                Vel[particles]=Velcm+np.transpose((R-I)*np.transpose(Velcm))
                 
                 
     #Grid Displacement back        
