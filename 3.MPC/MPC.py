@@ -13,6 +13,13 @@ def Initialise (Npart):
         
     return Pos,Vel
 
+
+def Ekinetic (Vel,Npart):
+    Ek=0
+    for i in xrange(Npart):
+        Ek+=Vel[i,0]**2+Vel[i,1]**2+Vel[i,2]**2
+    return 0.5*Ek
+    
 def FreeStream(Vel,Pos,Deltat):
     for i in xrange(3):
         Pos[:,i]=Pos[:,i]+Vel[:,i]*Deltat
@@ -177,7 +184,7 @@ plt.ion() #To enable interactive plotting
 axes = fig1.gca()
 axes.set_xlim([-2,2])
 axes.set_ylim([0,10])
-
+2
 
 plotF=np.maximum(np.rint(Nrun/10),1) #Plot every this number of steps
 
@@ -191,14 +198,19 @@ for t in xrange(Nrun):
         plt.hist(Vel[:,0],bins='auto', normed=1)
         plt.pause(0.05)
         fig1.clf()
+        print Ekinetic(Vel,Npart)
 
 
+fig = plt.figure()
+ax = fig.add_subplot(111)
+n, bins, rectangles = ax.hist(Vel[:,0], 50, normed=True)
+
+np.sum(n * np.diff(bins))
 
 
-
-plt.hist(Vel[:,0], bins='auto', normed=1)
-plt.figure(2)
-plt.hist(VelInitial[:,0],bins='auto', normed=1)
+#plt.hist(Vel[:,0], bins='auto', normed=1)
+#plt.figure(2)
+#plt.hist(VelInitial[:,0],bins='auto', normed=1)
 
 #==============================================================================
 # For testing Purposes
