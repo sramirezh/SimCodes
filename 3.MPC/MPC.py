@@ -1,5 +1,5 @@
 #Make as c++
-
+from __future__ import division
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -7,14 +7,13 @@ import matplotlib.pyplot as plt
 def Initialise (Npart):
     print("\nCreating a new configuration!\n")
     Pos=np.random.rand(Npart,3)*L
-    Vel=np.random.uniform(low=-1.0, high=1.0, size=(Npart,3))
-    for i in xrange(Npart):
-        Vel[i,:]=Vel[i,:]/(np.linalg.norm(Vel[i,:]))
+    Vel=np.random.uniform(low=0.5, high=1.0, size=(Npart,3))
+#    for i in xrange(Npart):
+#        Vel[i,:]=Vel[i,:]/(np.linalg.norm(Vel[i,:]))
         
     return Pos,Vel
 
 def FreeStream(Vel,Pos,Deltat):
-    
     for i in xrange(3):
         Pos[:,i]=Pos[:,i]+Vel[:,i]*Deltat
     return Pos
@@ -36,14 +35,11 @@ def StochasticRotation(Vel,Pos):
             for k in xrange(L):
                 particles=CellParticles(i,j,k,Head,List) #Particles in the cell
                 if np.size(particles)<2: break
-                Velcm=Vcm(Vel[particles]) #Cm Velocity
+                Velcm=Vcm(Vel[particles]) #Particle velocity in the cm reference
 
                 #Parameters and creation of the rotation matrix
                 phi,tetha=Random()
                 R=RotationMatrix(phi,tetha,alpha)
-                
-
-                
                 Vel[particles]=Vel[particles]+np.transpose((R-I)*np.transpose(Velcm))
                 
                 
@@ -148,13 +144,13 @@ def CellParticles(Indx,Indy,Indz,Head,List):
 
 alpha=90
 Deltat=0.5
-Npart=100000
+Npart=10000
 rho=np.float(10) 
 L=int(np.floor((Npart/rho)**(1./3.))) #Be careful to check what is the average density.
 Nx=L #Number of partitions in x,y,z direction.
 a=L/Nx #Cell Size
 print "The Average density of the system is: %f" %(Npart/L**3.0)
-Nrun=10
+Nrun=100
 
 #Initialization of the system
 Pos,Vel=Initialise(Npart)
@@ -163,16 +159,32 @@ VelInitial=np.copy(Vel)
 #==============================================================================
 # Starting the MPC algorithm
 #==============================================================================
+plt.close('all')
+fig1 = plt.figure()
+
+plt.ion() #To enable interactive plotting
+axes = fig1.gca()
+axes.set_xlim([-2,2])
+axes.set_ylim([0,10])
+
+
+plotF=np.maximum(np.rint(Nrun/10),1) #Plot every this number of steps
 
 for t in xrange(Nrun):
     print t
     Pos=FreeStream(Vel,Pos,Deltat)
     Vel=StochasticRotation(Vel,Pos)
 
+    if t%plotF==0:
+        fig1.canvas.draw()
+        plt.hist(Vel[:,0],bins='auto', normed=1)
+        plt.pause(0.05)
+        fig1.clf()
 
 
 
-plt.close('all')
+
+
 plt.hist(Vel[:,0], bins='auto', normed=1)
 plt.figure(2)
 plt.hist(VelInitial[:,0],bins='auto', normed=1)
@@ -196,6 +208,13 @@ plt.hist(VelInitial[:,0],bins='auto', normed=1)
 #ax = fig.add_subplot(111, projection='3d')
 #ax.scatter(Pos[:,0],Pos[:,1],Pos[:,2])
 #ax.scatter(Pos[lista,0],Pos[lista,1],Pos[lista,2],c='r', marker='o',s=40)
-    
-    
+Nsamples=10000
+T=np.zeros(Nsamples)
+P=np.zeros(Nsamples)
+V=np.zeros(Nsamples)
+RandDisp=np.zeros((Nsamples,3))
+for i in xrange(1000):
+   T[i],P[i]=Random()
+   V[i]=np.random.uniform(low=0, high=1.0)
+   RandDisp[i,:]=RandDisplacement()
     
