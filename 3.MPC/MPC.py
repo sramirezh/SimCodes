@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 def Initialise (Npart):
     print("\nCreating a new configuration!\n")
     Pos=np.random.rand(Npart,3)*L
-    Vel=np.random.uniform(low=0.5, high=1.0, size=(Npart,3))
+    Vel=np.random.uniform(low=0, high=1.0, size=(Npart,3))
 #    for i in xrange(Npart):
 #        Vel[i,:]=Vel[i,:]/(np.linalg.norm(Vel[i,:]))
         
@@ -28,19 +28,21 @@ def StochasticRotation(Vel,Pos):
     #Cell Division
     Head,List=CellDivision(Pos,Npart,L)
     
-    I=np.identity(3)
     #Stochastic Rotation Method
     for i in xrange(L):
         for j in xrange(L):
             for k in xrange(L):
                 particles=CellParticles(i,j,k,Head,List) #Particles in the cell
-                if np.size(particles)<2: break
-                Velcm=Vcm(Vel[particles]) #Particle velocity in the cm reference
+                n=np.size(particles)
+                if n<2: break
+                Vcm=CenterMass(Vel[particles]) #Particle velocity in the cm reference
 
                 #Parameters and creation of the rotation matrix
                 phi,tetha=Random()
                 R=RotationMatrix(phi,tetha,alpha)
-                Vel[particles]=Velcm+np.transpose((R-I)*np.transpose(Velcm))
+                #Vel[particles]=Vel[particles]+np.transpose((R-I)*np.transpose(Velcm))
+                for p in particles:
+                    Vel[p]=np.transpose(R*np.reshape((Vel[p]-Vcm),(3,1)))
                 
                 
     #Grid Displacement back        
@@ -49,17 +51,26 @@ def StochasticRotation(Vel,Pos):
     
     return Vel
 
-def Vcm(Vel):
+#def CenterMass(Vel):
+#    """
+#    Computes the center of mass velocity and expresses the velocities in the cm Frame
+#    """
+#    n,m=np.shape(Vel)
+#    Velcm=np.zeros((n,m))
+#    Vcm=[np.sum(Vel[:,0])/n,np.sum(Vel[:,1])/n, np.sum(Vel[:,2])/n] 
+#    for i in xrange(3):
+#        Velcm[:,i]=Vel[:,i]-Vcm[i]
+#    
+#    return Velcm,Vcm
+
+def CenterMass(Vel):
     """
-    Computes the center of mass velocity and expresses the velocities in the cm Frame
+    Computes the center of mass velocity 
     """
     n,m=np.shape(Vel)
-    Velcm=np.zeros((n,m))
     Vcm=[np.sum(Vel[:,0])/n,np.sum(Vel[:,1])/n, np.sum(Vel[:,2])/n] 
-    for i in xrange(3):
-        Velcm[:,i]=Vel[:,i]-Vcm[i]
     
-    return Velcm
+    return Vcm
     
 
 def Random():
@@ -208,13 +219,17 @@ plt.hist(VelInitial[:,0],bins='auto', normed=1)
 #ax = fig.add_subplot(111, projection='3d')
 #ax.scatter(Pos[:,0],Pos[:,1],Pos[:,2])
 #ax.scatter(Pos[lista,0],Pos[lista,1],Pos[lista,2],c='r', marker='o',s=40)
-Nsamples=10000
-T=np.zeros(Nsamples)
-P=np.zeros(Nsamples)
-V=np.zeros(Nsamples)
-RandDisp=np.zeros((Nsamples,3))
-for i in xrange(1000):
-   T[i],P[i]=Random()
-   V[i]=np.random.uniform(low=0, high=1.0)
-   RandDisp[i,:]=RandDisplacement()
-    
+
+
+#To see if the random numbers are ok 
+
+#Nsamples=10000
+#T=np.zeros(Nsamples)
+#P=np.zeros(Nsamples)
+#V=np.zeros(Nsamples)
+#RandDisp=np.zeros((Nsamples,3))
+#for i in xrange(1000):
+#   T[i],P[i]=Random()
+#   V[i]=np.random.uniform(low=0, high=1.0)
+#   RandDisp[i,:]=RandDisplacement()
+#    
