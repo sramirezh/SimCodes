@@ -4,21 +4,38 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def Initialise (Npart):
+def EKinetic (Vel,Npart):
+    Ek=0
+    for i in xrange(Npart):
+        Ek+=Vel[i,0]**2+Vel[i,1]**2+Vel[i,2]**2
+    return 0.5*Ek
+
+def Initialise (Npart, KbT):
     print("\nCreating a new configuration!\n")
     Pos=np.random.rand(Npart,3)*L
     Vel=np.random.uniform(low=0, high=1.0, size=(Npart,3))
+    
+    #Imposing zero momentum
+    Vcm=CenterMass(Vel)
+    Vel=Vel-Vcm
+    
+    #Scaling Velocities
+    scale=np.sqrt(3/2*Npart*KbT/EKinetic(Vel,Npart))
+    Vel=scale*Vel
+    
+    print "Checking if the velocity definition and scaling is correct \n"
+    print "The Temperature set temperature is: %f \n" %(EKinetic(Vel,Npart)*2/(3*Npart))
+    print "Momentum in (x,y,z):(%f,%f,%f) \n" %(np.sum(Vel[:,0]),np.sum(Vel[:,1]),np.sum(Vel[:,2]))
+    
+    #Correction of the center of mass movement
+    
 #    for i in xrange(Npart):
 #        Vel[i,:]=Vel[i,:]/(np.linalg.norm(Vel[i,:]))
         
     return Pos,Vel
 
 
-def Ekinetic (Vel,Npart):
-    Ek=0
-    for i in xrange(Npart):
-        Ek+=Vel[i,0]**2+Vel[i,1]**2+Vel[i,2]**2
-    return 0.5*Ek
+
     
 def FreeStream(Vel,Pos,Deltat):
     for i in xrange(3):
@@ -43,19 +60,17 @@ def StochasticRotation(Vel,Pos):
                 n=np.size(particles)
                 if n<2: break
                 Vcm=CenterMass(Vel[particles]) #Particle velocity in the cm reference
-
                 #Parameters and creation of the rotation matrix
                 phi,tetha=Random()
                 R=RotationMatrix(phi,tetha,alpha)
                 #Vel[particles]=Vel[particles]+np.transpose((R-I)*np.transpose(Velcm))
                 for p in particles:
-                    Vel[p]=np.transpose(R*np.reshape((Vel[p]-Vcm),(3,1)))
+                    Vel[p]=Vcm+np.transpose(R*np.reshape((Vel[p]-Vcm),(3,1)))
                 
                 
     #Grid Displacement back        
     for i in xrange(3):
         Pos[:,i]=GridShift(Pos[:,i],-Disp[i],L)
-    
     return Vel
 
 #def CenterMass(Vel):
@@ -160,53 +175,81 @@ def CellParticles(Indx,Indy,Indz,Head,List):
     
     return Indexes
 
+
+
+
+# =============================================================================
+# Input Parameters 
+# =============================================================================
 alpha=90
 Deltat=0.5
-Npart=10000
+Npart=100000
+KbT=1/3
 rho=np.float(10) 
 L=int(np.floor((Npart/rho)**(1./3.))) #Be careful to check what is the average density.
 Nx=L #Number of partitions in x,y,z direction.
 a=L/Nx #Cell Size
 print "The Average density of the system is: %f" %(Npart/L**3.0)
-Nrun=100
+Nrun=10
+Tsample=0.1
+Tsample=Nrun*Tsample
+m=1 #Particle mass
 
-#Initialization of the system
-Pos,Vel=Initialise(Npart)
-VelInitial=np.copy(Vel)
+
 
 #==============================================================================
 # Starting the MPC algorithm
 #==============================================================================
-plt.close('all')
-fig1 = plt.figure()
 
-plt.ion() #To enable interactive plotting
-axes = fig1.gca()
-axes.set_xlim([-2,2])
-axes.set_ylim([0,10])
-2
 
-plotF=np.maximum(np.rint(Nrun/10),1) #Plot every this number of steps
+#Initialization of the system
+Pos,Vel=Initialise(Npart,KbT)
+VelInitial=np.copy(Vel)
+
+
+
+
+
+
 
 for t in xrange(Nrun):
     print t
     Pos=FreeStream(Vel,Pos,Deltat)
     Vel=StochasticRotation(Vel,Pos)
+    
+    if t%Tsample==0:
+        print EKinetic(Vel,Npart)
+#    if t%plotF==0:
+#        fig1.canvas.draw()
+#        plt.hist(Vel[:,0],bins='auto', normed=1)
+#        plt.pause(0.05)
+#        fig1.clf()
+    
 
-    if t%plotF==0:
-        fig1.canvas.draw()
-        plt.hist(Vel[:,0],bins='auto', normed=1)
-        plt.pause(0.05)
-        fig1.clf()
-        print Ekinetic(Vel,Npart)
 
-
+plt.close('all')
 fig = plt.figure()
-ax = fig.add_subplot(111)
+ax = fig.gca()
 n, bins, rectangles = ax.hist(Vel[:,0], 50, normed=True)
 
-np.sum(n * np.diff(bins))
+v=np.linspace(np.min(Vel[:,0]),np.max(Vel[:,0]))
+pv=(m/(2*np.pi*KbT))**(1/2)*np.exp(-m*v**2/(2*KbT))
+plt.plot(v, pv)
 
+plt.xlabel("$v_x$", fontsize=16)  
+plt.ylabel("$P(v_x)$", fontsize=16)  
+
+# Ensure that the axis ticks only show up on the bottom and left of the plot.  
+# Ticks on the right and top of the plot are generally unnecessary chartjunk.  
+ax.get_xaxis().tick_bottom()  
+ax.get_yaxis().tick_left()  
+
+# Remove the plot frame lines. They are unnecessary chartjunk. 
+ax = plt.subplot(111)  
+ax.spines["top"].set_visible(False)  
+ax.spines["right"].set_visible(False)  
+
+plt.savefig("Vdist.eps", bbox_inches="tight")  
 
 #plt.hist(Vel[:,0], bins='auto', normed=1)
 #plt.figure(2)
